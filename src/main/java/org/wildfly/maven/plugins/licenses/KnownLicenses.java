@@ -47,6 +47,10 @@ public class KnownLicenses {
     private static final String EPL_2_0_URL = "https://www.eclipse.org/legal/epl-v20.html";
     private static final License EPL_2_0_LICENSE = createLicense(EPL_2_0_NAME, EPL_2_0_URL);
 
+    private static final String FSF_ALL_NAME = "FSF All Permissive License";
+    private static final String FSF_ALL_URL = "https://www.gnu.org/prep/maintain/html_node/License-Notices-for-Other-Files.html";
+    private static final License FSF_ALL_LICENSE = createLicense(FSF_ALL_NAME, FSF_ALL_URL);
+
     private static final String GPL_2_0_W_CPE_NAME = "GNU General Public License v2.0 only, with Classpath exception";
     private static final String GPL_2_0_W_CPE_URL = "https://fedoraproject.org/wiki/Licensing/GPL_Classpath_Exception";
     private static final License GPL_2_0_W_CPE_LICENSE = createLicense(GPL_2_0_W_CPE_NAME, GPL_2_0_W_CPE_URL);
@@ -143,6 +147,8 @@ public class KnownLicenses {
         KNOWN_LICENSES.put("eclipse public license - v 2.0", EPL_2_0_LICENSE);
         KNOWN_LICENSES.put("epl 2.0", EPL_2_0_LICENSE);
         KNOWN_LICENSES.put("epl-2.0", EPL_2_0_LICENSE);
+
+        KNOWN_LICENSES.put(FSF_ALL_NAME.toLowerCase(), FSF_ALL_LICENSE);
 
         KNOWN_LICENSES.put(GPL_2_0_W_CPE_NAME.toLowerCase(), GPL_2_0_W_CPE_LICENSE);
         KNOWN_LICENSES.put("gpl2 w/ cpe", GPL_2_0_W_CPE_LICENSE);
