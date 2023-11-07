@@ -31,9 +31,9 @@
     <description>Maven plugin that fills in versions of artifacts listed in licenses.xml</description>
 
     <scm>
-        <connection>scm:git:https://github.com/wildfly/license-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/wildfly/license-plugin.git</developerConnection>
-        <url>https://github.com/wildfly/license-plugin</url>
+        <connection>scm:git:https://github.com/wildfly/licenses-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/wildfly/licenses-plugin.git</developerConnection>
+        <url>https://github.com/wildfly/licenses-plugin</url>
     </scm>
 
     <licenses>
@@ -79,7 +79,7 @@
             <version>${version.org.apache.maven.plugin-tools}</version>
         </dependency>
     </dependencies>
-	
+
     <build>
         <plugins>
             <plugin>
