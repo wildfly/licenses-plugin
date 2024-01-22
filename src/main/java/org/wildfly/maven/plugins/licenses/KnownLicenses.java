@@ -117,6 +117,7 @@ public class KnownLicenses {
         KNOWN_LICENSES.put("the apache software license, version 2.0", APACHE_2_0_LICENSE);
 
         KNOWN_LICENSES.put(BSD_2_CLAUSE_NAME.toLowerCase(), BSD_2_CLAUSE_LICENSE);
+        KNOWN_LICENSES.put("bsd-2-clause", BSD_2_CLAUSE_LICENSE);
 
         KNOWN_LICENSES.put(BSD_3_CLAUSE_NAME.toLowerCase(), BSD_3_CLAUSE_LICENSE);
         KNOWN_LICENSES.put("bsd-3-clause", BSD_3_CLAUSE_LICENSE);
