@@ -278,7 +278,7 @@ public class UpdateLicensesMojo
 
         // adjust to canonical license info
         List<License> declaredLicenses = licenseInfo.getLicenses();
-        Map<String, License> knownLicenses = KnownLicenses.get();
+        Map<String, License> knownLicenses = KnownLicense.toMap();
         if (!declaredLicenses.isEmpty()) {
           for (int i = 0; i < declaredLicenses.size(); i++) {
             License license = declaredLicenses.get(i);
