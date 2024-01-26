@@ -24,7 +24,9 @@ public enum KnownLicense {
             "the apache software license, version 2.0"),
 
     BSD_2_CLAUSE("BSD 2-clause \"Simplified\" License", "https://opensource.org/license/BSD-2-Clause/",
-            "bsd-2-clause"),
+            "bsd-2-clause",
+            "bsd 2-clause license",
+            "the bsd 2-clause license"),
 
     BSD_3_CLAUSE("BSD 3-Clause \"New\" or \"Revised\" License", "https://www.opensource.org/licenses/BSD-3-Clause",
             "bsd-3-clause",
@@ -59,6 +61,7 @@ public enum KnownLicense {
 
     GPL_2_0_W_CPE("GNU General Public License v2.0 only, with Classpath exception",
             "https://fedoraproject.org/wiki/Licensing/GPL_Classpath_Exception",
+            "gpl2 w/ cpe",
             "gpl-2.0-with-classpath-exception",
             "gnu general public license, version 2 with the classpath exception",
             "gnu general public license, version 2 with the gnu classpath exception"),
