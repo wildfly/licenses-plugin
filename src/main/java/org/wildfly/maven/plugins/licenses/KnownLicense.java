@@ -12,14 +12,15 @@ public enum KnownLicense {
     APACHE_1_1("Apache License 1.1", "https://www.apache.org/licenses/LICENSE-1.1",
             "apache software license, version 1.1"),
     APACHE_2_0("Apache License 2.0", "https://www.apache.org/licenses/LICENSE-2.0",
-            "asl 2.0",
             "apache 2",
-            "apache 2.0",
-            "apache-2.0",
             "apache 2.0 license",
+            "apache 2.0",
+            "apache license v2.0",
             "apache license version 2.0",
             "apache license, version 2.0",
             "apache software license, version 2.0",
+            "apache-2.0",
+            "asl 2.0",
             "the apache license, version 2.0",
             "the apache software license, version 2.0"),
 
@@ -29,8 +30,9 @@ public enum KnownLicense {
             "the bsd 2-clause license"),
 
     BSD_3_CLAUSE("BSD 3-Clause \"New\" or \"Revised\" License", "https://www.opensource.org/licenses/BSD-3-Clause",
-            "bsd-3-clause",
-            "3-clause bsd license"),
+            "3-clause bsd license",
+            "bsd license 3",
+            "bsd-3-clause"),
 
     CPL("Common Public License 1.0", "https://www.eclipse.org/legal/cpl-v10.html", "cpl"),
 
@@ -52,8 +54,9 @@ public enum KnownLicense {
             "epl 1.0"),
 
     EPL_2_0("Eclipse Public License 2.0", "https://www.eclipse.org/legal/epl-v20.html",
-            "eclipse public license v. 2.0",
             "eclipse public license - v 2.0",
+            "eclipse public license v. 2.0",
+            "eclipse public license v2.0",
             "epl 2.0",
             "epl-2.0"),
 
@@ -61,22 +64,25 @@ public enum KnownLicense {
 
     GPL_2_0_W_CPE("GNU General Public License v2.0 only, with Classpath exception",
             "https://fedoraproject.org/wiki/Licensing/GPL_Classpath_Exception",
-            "gpl2 w/ cpe",
-            "gpl-2.0-with-classpath-exception",
+            "gnu general public license (gpl), version 2, with the classpath exception",
             "gnu general public license, version 2 with the classpath exception",
-            "gnu general public license, version 2 with the gnu classpath exception"),
+            "gnu general public license, version 2 with the gnu classpath exception",
+            "gpl-2.0-with-classpath-exception",
+            "gpl2 w/ cpe"),
 
     LGPL_2_0_ONLY("GNU Library General Public License v2 only", "https://www.gnu.org/licenses/old-licenses/lgpl-2.0-standalone.html"),
 
     LGPL_2_1_ONLY("GNU Lesser General Public License v2.1 only",
             "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html",
             "lgpl 2.1",
-            "the gnu lesser general public license, version 2.1"),
+            "the gnu lesser general public license, version 2.1",
+            "lgpl, version 2.1"),
 
     LGPL_2_1_LATER("GNU Lesser General Public License v2.1 or later",
             "https://www.gnu.org/licenses/old-licenses/lgpl-2.1-standalone.html",
+            "gnu library general public license v2.1 or later",
             "lgpl 2.1 or later",
-            "gnu library general public license v2.1 or later"),
+            "lgpl-2.1-or-later"),
 
     LGPL_3_0_ONLY("GNU Lesser General Public License v3.0 only", "https://www.gnu.org/licenses/lgpl-3.0-standalone.html"),
 
@@ -89,7 +95,9 @@ public enum KnownLicense {
     MIT_0("MIT-0", "https://spdx.org/licenses/MIT-0.html"),
 
     MIT("MIT License", "https://www.opensource.org/licenses/MIT",
-            "bouncy castle licence"),
+            "bouncy castle licence",
+            "mit",
+            "the mit license"),
 
     MPL_1_1("Mozilla Public License 1.1", "https://www.mozilla.org/MPL/MPL-1.1.html",
             "mpl 1.1"),
