@@ -40,7 +40,8 @@ public enum KnownLicense {
             "cc0",
             "public domain, per creative commons cc0"),
 
-    CC_2_5("Creative Commons Attribution 2.5", "https://creativecommons.org/licenses/by/2.5/legalcode"),
+    CC_2_5("Creative Commons Attribution 2.5", "https://creativecommons.org/licenses/by/2.5/legalcode",
+            "creative commons attribution license 2.5"),
 
     EDL_1_0("Eclipse Distribution License, Version 1.0", "https://repository.jboss.org/licenses/edl-1.0.txt",
             "eclipse distribution license - v 1.0",
