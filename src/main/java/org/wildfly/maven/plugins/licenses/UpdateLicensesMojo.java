@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * Insert versions into generated licenses.xml
  */
 @Mojo(name = "insert-versions", requiresDependencyResolution = ResolutionScope.TEST,
-        defaultPhase = LifecyclePhase.PACKAGE)
+        defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true)
 public class UpdateLicensesMojo
         extends AbstractMojo {
   private final LicensesFileWriter licensesFileWriter;
