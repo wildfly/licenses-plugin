@@ -86,7 +86,7 @@
             <plugin>
                 <groupId>com.github.danielflower.mavenplugins</groupId>
                 <artifactId>multi-module-maven-release-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.8.2</version>
                 <configuration>
                     <releaseGoals>
                         <releaseGoal>deploy</releaseGoal>
