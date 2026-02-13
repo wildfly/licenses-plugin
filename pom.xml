@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>49</version>
+        <version>50</version>
         <relativePath />
     </parent>
     <groupId>org.wildfly.maven.plugins</groupId>
@@ -29,27 +29,42 @@
     <packaging>maven-plugin</packaging>
     <name>WildFly Licenses Plugin</name>
     <description>Maven plugin that fills in versions of artifacts listed in licenses.xml</description>
+    <url>https://github.com/wildfly/licenses-plugin</url>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/wildfly/licenses-plugin/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>GitHub Actions</system>
+        <url>https://github.com/wildfly/licenses-plugin/actions</url>
+    </ciManagement>
 
     <scm>
-        <connection>scm:git:https://github.com/wildfly/licenses-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/wildfly/licenses-plugin.git</developerConnection>
+        <connection>scm:git:git@github.com:wildfly/licenses-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly/licenses-plugin.git</developerConnection>
         <url>https://github.com/wildfly/licenses-plugin</url>
-      <tag>2.4.3.Final</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
             <distribution>repo</distribution>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
         </license>
     </licenses>
 
     <properties>
         <version.org.apache.maven.maven-core>3.9.11</version.org.apache.maven.maven-core>
-	<version.org.apache.maven.plugin-testing.maven-plugin-testing-harness>3.3.0</version.org.apache.maven.plugin-testing.maven-plugin-testing-harness>
+        <version.org.apache.maven.plugin-testing.maven-plugin-testing-harness>3.3.0</version.org.apache.maven.plugin-testing.maven-plugin-testing-harness>
         <version.org.apache.maven.plugin-tools>3.15.1</version.org.apache.maven.plugin-tools>
         <version.org.wildfly.checkstyle-config>1.0.8.Final</version.org.wildfly.checkstyle-config>
+
+        <!-- Nexus deployment settings -->
+        <nexus.repository.staging>wildfly-staging</nexus.repository.staging>
+        <nexus.staging.tag>wildfly-licenses-plugin-${project.version}</nexus.staging.tag>
     </properties>
 
     <dependencies>
@@ -107,7 +122,7 @@
                         </goals>
                     </execution>
                 </executions>
-			</plugin>
+            </plugin>
             <plugin>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <configuration>
