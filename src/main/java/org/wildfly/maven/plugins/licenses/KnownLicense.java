@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.maven.model.License;
@@ -121,8 +122,8 @@ public enum KnownLicense {
     public static Map<String, License> toMap() {
         Map<String, License> licenses = new HashMap<>();
         Arrays.stream(KnownLicense.values()).forEach(k -> {
-            licenses.put(k.name.toLowerCase(), k.license);
-            k.aliases.forEach(a -> licenses.put(a.toLowerCase(), k.license));
+            licenses.put(k.name.toLowerCase(Locale.ROOT), k.license);
+            k.aliases.forEach(a -> licenses.put(a.toLowerCase(Locale.ROOT), k.license));
         });
 
         return Collections.unmodifiableMap(licenses);

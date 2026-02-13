@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -282,7 +283,7 @@ public class UpdateLicensesMojo
         if (!declaredLicenses.isEmpty()) {
           for (int i = 0; i < declaredLicenses.size(); i++) {
             License license = declaredLicenses.get(i);
-            String licenseName = license.getName().toLowerCase();
+            String licenseName = license.getName().toLowerCase(Locale.ROOT);
             License canonicalLicense = knownLicenses.containsKey(licenseName) ? knownLicenses.get(licenseName)
                     : licenseAliasesMap.get(licenseName);
             if (canonicalLicense != null) {
@@ -446,9 +447,9 @@ public class UpdateLicensesMojo
         }
       }
       for (KnownLicenseInfo knownLicenseInfo : projectInfo.getKnownLicensesList()) {
-        licenseAliasesMap.put(knownLicenseInfo.getLicense().getName().toLowerCase(), knownLicenseInfo.getLicense());
+        licenseAliasesMap.put(knownLicenseInfo.getLicense().getName().toLowerCase(Locale.ROOT), knownLicenseInfo.getLicense());
         for (String alias : knownLicenseInfo.getAliases()) {
-          licenseAliasesMap.put(alias.toLowerCase(), knownLicenseInfo.getLicense());
+          licenseAliasesMap.put(alias.toLowerCase(Locale.ROOT), knownLicenseInfo.getLicense());
         }
       }
     } catch (Exception e) {
