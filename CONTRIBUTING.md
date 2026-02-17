@@ -83,16 +83,10 @@ To build `licenses-plugin` run:
 mvn clean install
 ```
 
-To skip the tests, use:
+To run the tests, use:
 
 ```bash
-mvn clean install -DskipTests=true
-```
-
-To run only a specific test, use:
-
-```bash
-mvn clean install -Dtest=TestClassName
+mvn invoker:run
 ```
 
 ## Contributing Guidelines
