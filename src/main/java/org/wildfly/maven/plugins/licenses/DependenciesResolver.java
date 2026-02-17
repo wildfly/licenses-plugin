@@ -2,11 +2,9 @@ package org.wildfly.maven.plugins.licenses;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.project.MavenProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
-import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.logging.Logger;
 
@@ -34,7 +32,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
    * Project builder.
    */
   @javax.inject.Inject
-  private ProjectBuilder mavenProjectBuilder;
+  private MavenProjectBuilder mavenProjectBuilder;
 
   public <R> SortedMap<String, R> loadDependenciesAndConvertThem(MavenProject project,
                                                                  MavenProjectDependenciesConfiguration configuration,
@@ -151,10 +149,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
     }
 
     try {
-      ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
-      buildingRequest.setLocalRepository(localRepository);
-      buildingRequest.setRemoteRepositories(remoteRepositories);
-      depMavenProject = mavenProjectBuilder.build(artifact, true, buildingRequest).getProject();
+      depMavenProject = mavenProjectBuilder.buildFromRepository(artifact, remoteRepositories, localRepository, true);
       depMavenProject.getArtifact().setScope(artifact.getScope());
     } catch (ProjectBuildingException e) {
       log.warn("Unable to obtain POM for artifact : " + artifact, e);
