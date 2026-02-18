@@ -58,7 +58,7 @@
 
     <properties>
         <version.org.apache.maven.maven-core>3.9.11</version.org.apache.maven.maven-core>
-        <version.org.apache.maven.plugin-tools>3.15.1</version.org.apache.maven.plugin-tools>
+        <version.org.apache.maven.plugin-tools>3.15.2</version.org.apache.maven.plugin-tools>
         <version.org.apache.maven.invoker-plugin>3.9.1</version.org.apache.maven.invoker-plugin>
         <version.org.wildfly.checkstyle-config>1.0.8.Final</version.org.wildfly.checkstyle-config>
 
