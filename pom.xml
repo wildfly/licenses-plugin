@@ -25,7 +25,7 @@
     </parent>
     <groupId>org.wildfly.maven.plugins</groupId>
     <artifactId>licenses-plugin</artifactId>
-    <version>2.4.4.Final</version>
+    <version>2.4.5.Final-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
     <name>WildFly Licenses Plugin</name>
     <description>Maven plugin that fills in versions of artifacts listed in licenses.xml</description>
@@ -45,7 +45,7 @@
         <connection>scm:git:git@github.com:wildfly/licenses-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly/licenses-plugin.git</developerConnection>
         <url>https://github.com/wildfly/licenses-plugin</url>
-        <tag>2.4.4.Final</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <licenses>
