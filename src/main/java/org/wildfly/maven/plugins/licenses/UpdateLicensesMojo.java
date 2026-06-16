@@ -261,14 +261,16 @@ public class UpdateLicensesMojo
           licenseInfo.setVersion(dependencyLicenseInfo.getVersion());
 
           if (!dependencyLicenseInfo.getLicenses().isEmpty()) {
-            String declaredLicenseNames = dependencyLicenseInfo.getLicenses().stream().map(License::getName)
-                    .collect(Collectors.joining(",", "'", "'"));
-            String localLicenseNames = licenseInfo.getLicenses().stream().map(License::getName)
-                    .collect(Collectors.joining(",", "'", "'"));
+            Set<String> declaredLicenseNames = dependencyLicenseInfo.getLicenses().stream().map(License::getName)
+                    .collect(Collectors.toSet());
+            Set<String> localLicenseNames = licenseInfo.getLicenses().stream().map(License::getName)
+                    .collect(Collectors.toSet());
 
-            getLog().warn("Possible license mismatch for " + dependencyLicenseInfo + ", check that the configuration files are up to date\n" +
-                    "Declared licenses: " + declaredLicenseNames + "\n" +
-                    "Local licenses: " + localLicenseNames);
+            if (!declaredLicenseNames.equals(localLicenseNames)) {
+              getLog().warn("Possible license mismatch for " + dependencyLicenseInfo + ", check that the configuration files are up to date\n" +
+                      "Declared licenses: " + declaredLicenseNames.stream().collect(Collectors.joining(",", "'", "'")) + "\n" +
+                      "Local licenses: " + localLicenseNames.stream().collect(Collectors.joining(",", "'", "'")));
+            }
           }
         } else {
           licenseInfo = dependencyLicenseInfo;
