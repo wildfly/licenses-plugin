@@ -1,5 +1,6 @@
 package org.wildfly.maven.plugins.licenses;
 
+import com.google.common.base.Strings;
 import org.apache.maven.model.License;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -46,21 +47,12 @@ public class LicensesFileWriter {
 
   private Node createDependencyNode(Document doc, ProjectLicenseInfo dep) {
     Node depNode = doc.createElement("dependency");
-
-    Node groupIdNode = doc.createElement("groupId");
-    groupIdNode.appendChild(doc.createTextNode(dep.getGroupId()));
-    depNode.appendChild(groupIdNode);
-
-    Node artifactIdNode = doc.createElement("artifactId");
-    artifactIdNode.appendChild(doc.createTextNode(dep.getArtifactId()));
-    depNode.appendChild(artifactIdNode);
-
-    Node versionNode = doc.createElement("version");
-    versionNode.appendChild(doc.createTextNode(dep.getVersion()));
-    depNode.appendChild(versionNode);
+    appendTag(doc, depNode, "groupId", dep.getGroupId());
+    appendTag(doc, depNode, "artifactId", dep.getArtifactId());
+    appendTag(doc, depNode, "version", dep.getVersion());
 
     Node licensesNode = doc.createElement("licenses");
-    if (dep.getLicenses() == null || dep.getLicenses().size() == 0) {
+    if (dep.getLicenses().isEmpty()) {
       licensesNode.appendChild(doc.createComment("No license information available. "));
     } else {
       for (License lic : dep.getLicenses()) {
@@ -69,37 +61,23 @@ public class LicensesFileWriter {
     }
     depNode.appendChild(licensesNode);
     return depNode;
-
   }
 
   private Node createLicenseNode(Document doc, License lic) {
     Node licenseNode = doc.createElement("license");
-
-    if (lic.getName() != null) {
-      Node licNameNode = doc.createElement("name");
-      licNameNode.appendChild(doc.createTextNode(lic.getName()));
-      licenseNode.appendChild(licNameNode);
-    }
-
-    if (lic.getUrl() != null) {
-      Node licUrlNode = doc.createElement("url");
-      licUrlNode.appendChild(doc.createTextNode(lic.getUrl()));
-      licenseNode.appendChild(licUrlNode);
-    }
-
-    if (lic.getDistribution() != null) {
-      Node licDistNode = doc.createElement("distribution");
-      licDistNode.appendChild(doc.createTextNode(lic.getDistribution()));
-      licenseNode.appendChild(licDistNode);
-    }
-
-    if (lic.getComments() != null) {
-      Node licCommentsNode = doc.createElement("comments");
-      licCommentsNode.appendChild(doc.createTextNode(lic.getComments()));
-      licenseNode.appendChild(licCommentsNode);
-    }
+    appendTag(doc, licenseNode, "name", lic.getName());
+    appendTag(doc, licenseNode, "url", lic.getUrl());
+    appendTag(doc, licenseNode, "distribution", lic.getDistribution());
+    appendTag(doc, licenseNode, "comments", lic.getComments());
 
     return licenseNode;
   }
 
+  private void appendTag(Document doc, Node parentNode, String tagName, String content) {
+    if (!Strings.isNullOrEmpty(content)) {
+      Node element = doc.createElement(tagName);
+      element.appendChild(doc.createTextNode(content));
+      parentNode.appendChild(element);
+    }
+  }
 }

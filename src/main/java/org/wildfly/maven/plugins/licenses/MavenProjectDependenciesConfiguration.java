@@ -19,7 +19,6 @@ public class MavenProjectDependenciesConfiguration {
    */
   public final boolean includeSelfArtifact;
 
-
   /**
    * list of scopes to include while loading dependencies, if null, then include all scopes
    */
@@ -50,11 +49,6 @@ public class MavenProjectDependenciesConfiguration {
    */
   public final String excludedArtifacts;
 
-  /**
-   * if true verbose mode is on, if false off
-   */
-  public final boolean verbose;
-
   public MavenProjectDependenciesConfiguration(boolean includeTransitiveDependencies,
                                                boolean includeOptionalDependencies,
                                                boolean includeSelfArtifact,
@@ -63,8 +57,7 @@ public class MavenProjectDependenciesConfiguration {
                                                String includedArtifacts,
                                                String includedGroups,
                                                String excludedGroups,
-                                               String excludedArtifacts,
-                                               boolean verbose) {
+                                               String excludedArtifacts) {
     this.includeTransitiveDependencies = includeTransitiveDependencies;
     this.includeOptionalDependencies = includeOptionalDependencies;
     this.includeSelfArtifact = includeSelfArtifact;
@@ -74,6 +67,5 @@ public class MavenProjectDependenciesConfiguration {
     this.includedGroups = includedGroups;
     this.excludedGroups = excludedGroups;
     this.excludedArtifacts = excludedArtifacts;
-    this.verbose = verbose;
   }
 }

@@ -33,7 +33,7 @@ public class LicensesFileReader {
   public ProjectInfo parseLicenseSummary(InputStream licSummaryIS)
           throws IOException, ParserConfigurationException, SAXException {
     ProjectInfo projectInfo = new ProjectInfo();
-    List<ProjectLicenseInfo> dependencies = new ArrayList<ProjectLicenseInfo>();
+    List<ProjectLicenseInfo> dependencies = new ArrayList<>();
     List<KnownLicenseInfo> knownLicenses = new ArrayList<>();
 
     DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -73,7 +73,6 @@ public class LicensesFileReader {
     projectInfo.setKnownLicensesList(knownLicenses);
 
     return projectInfo;
-
   }
 
   private ProjectLicenseInfo parseDependencyNode(Node dependencyNode) {
@@ -82,21 +81,26 @@ public class LicensesFileReader {
     for (int i = 0; i < depElements.getLength(); ++i) {
       Node node = depElements.item(i);
 
-      if (node.getNodeName().equals("groupId")) {
-        dependency.setGroupId(node.getTextContent());
-      } else if (node.getNodeName().equals("artifactId")) {
-        dependency.setArtifactId(node.getTextContent());
-      } else if (node.getNodeName().equals("version")) {
-        dependency.setVersion(node.getTextContent());
-      } else if (node.getNodeName().equals("licenses")) {
-        NodeList licensesChildNodes = node.getChildNodes();
-        for (int j = 0; j < licensesChildNodes.getLength(); ++j) {
-          Node licensesChildNode = licensesChildNodes.item(j);
-          if (licensesChildNode.getNodeName().equals("license")) {
-            License license = parseLicense(licensesChildNode);
-            dependency.addLicense(license);
+      switch (node.getNodeName()) {
+        case "groupId":
+          dependency.setGroupId(node.getTextContent());
+          break;
+        case "artifactId":
+          dependency.setArtifactId(node.getTextContent());
+          break;
+        case "version":
+          dependency.setVersion(node.getTextContent());
+          break;
+        case "licenses":
+          NodeList licensesChildNodes = node.getChildNodes();
+          for (int j = 0; j < licensesChildNodes.getLength(); ++j) {
+            Node licensesChildNode = licensesChildNodes.item(j);
+            if (licensesChildNode.getNodeName().equals("license")) {
+              License license = parseLicense(licensesChildNode);
+              dependency.addLicense(license);
+            }
           }
-        }
+          break;
       }
     }
     return dependency;
@@ -107,14 +111,19 @@ public class LicensesFileReader {
     NodeList licenseElements = licenseNode.getChildNodes();
     for (int i = 0; i < licenseElements.getLength(); ++i) {
       Node node = licenseElements.item(i);
-      if (node.getNodeName().equals("name")) {
-        license.setName(node.getTextContent());
-      } else if (node.getNodeName().equals("url")) {
-        license.setUrl(node.getTextContent());
-      } else if (node.getNodeName().equals("distribution")) {
-        license.setDistribution(node.getTextContent());
-      } else if (node.getNodeName().equals("comments")) {
-        license.setComments(node.getTextContent());
+      switch (node.getNodeName()) {
+        case "name":
+          license.setName(node.getTextContent());
+          break;
+        case "url":
+          license.setUrl(node.getTextContent());
+          break;
+        case "distribution":
+          license.setDistribution(node.getTextContent());
+          break;
+        case "comments":
+          license.setComments(node.getTextContent());
+          break;
       }
     }
     return license;

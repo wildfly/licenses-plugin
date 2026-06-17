@@ -1,13 +1,18 @@
 package org.wildfly.maven.plugins.licenses;
 
+import com.google.common.base.Strings;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.MavenProjectBuilder;
+import org.apache.maven.project.ProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
+import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.logging.Logger;
+import org.eclipse.aether.RepositorySystemSession;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.List;
@@ -31,25 +36,21 @@ public class DependenciesResolver extends AbstractLogEnabled {
   /**
    * Project builder.
    */
-  @javax.inject.Inject
-  private MavenProjectBuilder mavenProjectBuilder;
+  @Inject
+  private ProjectBuilder mavenProjectBuilder;
 
   public <R> SortedMap<String, R> loadDependenciesAndConvertThem(MavenProject project,
                                                                  MavenProjectDependenciesConfiguration configuration,
                                                                  ArtifactRepository localRepository,
                                                                  List<ArtifactRepository> remoteRepositories,
                                                                  SortedMap<String, MavenProject> cache,
+                                                                 RepositorySystemSession repositorySession,
                                                                  Function<MavenProject, R> convertFunction) {
+    Pattern includedGroupPattern = (Strings.isNullOrEmpty(configuration.includedGroups) ? null : Pattern.compile(configuration.includedGroups));
+    Pattern includedArtifactPattern = (Strings.isNullOrEmpty(configuration.includedArtifacts) ? null : Pattern.compile(configuration.includedArtifacts));
 
-
-    Pattern includedGroupPattern = (isEmpty(configuration.includedGroups) ? null : Pattern.compile(configuration.includedGroups));
-    Pattern includedArtifactPattern = (isEmpty(configuration.includedArtifacts) ? null : Pattern.compile(configuration.includedArtifacts));
-
-    Pattern excludedGroupPattern = (isEmpty(configuration.excludedGroups) ? null : Pattern.compile(configuration.excludedGroups));
-    Pattern excludedArtifactPattern = (isEmpty(configuration.excludedArtifacts) ? null : Pattern.compile(configuration.excludedArtifacts));
-
-    boolean matchInclusions = includedGroupPattern != null || includedArtifactPattern != null;
-    boolean matchExclusions = excludedGroupPattern != null || excludedArtifactPattern != null;
+    Pattern excludedGroupPattern = (Strings.isNullOrEmpty(configuration.excludedGroups) ? null : Pattern.compile(configuration.excludedGroups));
+    Pattern excludedArtifactPattern = (Strings.isNullOrEmpty(configuration.excludedArtifacts) ? null : Pattern.compile(configuration.excludedArtifacts));
 
     Set<Artifact> depArtifacts;
 
@@ -68,62 +69,46 @@ public class DependenciesResolver extends AbstractLogEnabled {
     List<String> includedScopes = configuration.includedScopes;
     List<String> excludeScopes = configuration.excludedScopes;
 
-    boolean verbose = configuration.verbose;
-
-    SortedMap<String, R> result = new TreeMap<String, R>();
+    SortedMap<String, R> result = new TreeMap<>();
     Logger log = getLogger();
 
-    for (Object o : depArtifacts) {
-      Artifact artifact = (Artifact) o;
+    for (Artifact artifact : depArtifacts) {
       String id = getArtifactId(artifact);
 
-      if (verbose) {
-        log.info("detected artifact " + id);
-      }
+      log.debug("detected artifact " + id);
 
       if (!configuration.includeOptionalDependencies && artifact.isOptional()) {
-        if (verbose) {
-          log.info("skip optional artifact " + id);
-        }
+        log.debug("skip optional artifact " + id);
         continue;
       }
 
       String scope = artifact.getScope();
       if (isNotEmptyCollection(includedScopes) && !includedScopes.contains(scope)) {
-        if (verbose) {
-          log.info("skip artifact " + id + " - not in included scopes");
-        }
+        log.debug("skip artifact " + id + " - not in included scopes");
         continue;
       }
 
       if (excludeScopes.contains(scope)) {
-        if (verbose) {
-          log.info("skip artifact " + id + " - in excluded scope " + scope);
-        }
+        log.debug("skip artifact " + id + " - in excluded scope " + scope);
         continue;
       }
-
 
       // Check if the project should be included
       boolean isToInclude = matchesIncluded(artifact, includedGroupPattern, includedArtifactPattern);
       if (!isToInclude) {
-        if (verbose) {
-          log.info("skip artifact " + id + " - not in included artifactId / groupId patterns");
-        }
+        log.debug("skip artifact " + id + " - not in included artifactId / groupId patterns");
         continue;
       }
       // Check if the project should be excluded
       boolean isToExclude = matchesExcluded(artifact, excludedGroupPattern, excludedArtifactPattern);
 
       if (isToExclude) {
-        if (verbose) {
-          log.info("skip artifact " + id + " - in excluded artifactId / groupId patterns");
-        }
+        log.debug("skip artifact " + id + " - in excluded artifactId / groupId patterns");
         continue;
       }
 
       MavenProject depMavenProject = getDependencyMavenProject(localRepository,
-              remoteRepositories, cache, verbose, artifact, log, id);
+              remoteRepositories, cache, artifact, repositorySession, log, id);
       if (depMavenProject != null) {
         // keep the project
         result.put(id, convertFunction.apply(depMavenProject));
@@ -132,40 +117,40 @@ public class DependenciesResolver extends AbstractLogEnabled {
     return result;
   }
 
-  private MavenProject getDependencyMavenProject(ArtifactRepository localRepository,
-                                                 List<ArtifactRepository> remoteRepositories, SortedMap<String, MavenProject> cache,
-                                                 boolean verbose, Artifact artifact, Logger log, String id) {
+  private MavenProject getDependencyMavenProject(ArtifactRepository localRepository, List<ArtifactRepository> remoteRepositories,
+                                                 SortedMap<String, MavenProject> cache, Artifact artifact,
+                                                 RepositorySystemSession repositorySession, Logger log, String id) {
     MavenProject depMavenProject = null;
 
     if (cache != null) {
       // try to get project from cache
       depMavenProject = cache.get(id);
       if (depMavenProject != null) {
-        if (verbose) {
-          log.info("add dependency [" + id + "] (from cache)");
-        }
+        log.debug("add dependency [" + id + "] (from cache)");
         return depMavenProject;
       }
     }
 
     try {
-      depMavenProject = mavenProjectBuilder.buildFromRepository(artifact, remoteRepositories, localRepository, true);
+      ProjectBuildingRequest projectBuildingRequest = new DefaultProjectBuildingRequest();
+      projectBuildingRequest.setLocalRepository(localRepository);
+      projectBuildingRequest.setRemoteRepositories(remoteRepositories);
+      projectBuildingRequest.setSystemProperties(System.getProperties());
+      projectBuildingRequest.setRepositorySession(repositorySession);
+      depMavenProject = mavenProjectBuilder.build(artifact, true, projectBuildingRequest).getProject();
       depMavenProject.getArtifact().setScope(artifact.getScope());
     } catch (ProjectBuildingException e) {
       log.warn("Unable to obtain POM for artifact : " + artifact, e);
       return null;
     }
 
-    if (verbose) {
-      log.info("add dependency [" + id + "]");
-    }
+    log.debug("add dependency [" + id + "]");
 
     if (cache != null) {
       cache.put(id, depMavenProject);
     }
     return depMavenProject;
   }
-
 
   /**
    * Tests if the given project can be included against a groupdId pattern and a artifact pattern.
@@ -176,9 +161,9 @@ public class DependenciesResolver extends AbstractLogEnabled {
    * @return {@code true} if the project is includavble, {@code false} otherwise
    */
   private boolean matchesIncluded(Artifact project, Pattern includedGroupPattern, Pattern includedArtifactPattern) {
-
     Logger log = getLogger();
-    if (includedArtifactPattern == null && includedGroupPattern == null) {// If there is no specified artifacts and group to include, include all
+    // If there is no specified artifacts and group to include, include all
+    if (includedArtifactPattern == null && includedGroupPattern == null) {
       return true;
     }
 
@@ -188,9 +173,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
       try {
         Matcher matchGroupId = includedGroupPattern.matcher(project.getGroupId());
         if (matchGroupId.find()) {
-          if (log.isDebugEnabled()) {
-            log.debug("Include " + project.getGroupId());
-          }
+          log.debug("Include " + project.getGroupId());
           return true;
         }
       } catch (PatternSyntaxException e) {
@@ -204,9 +187,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
       try {
         Matcher matchGroupId = includedArtifactPattern.matcher(project.getArtifactId());
         if (matchGroupId.find()) {
-          if (log.isDebugEnabled()) {
-            log.debug("Include " + project.getArtifactId());
-          }
+          log.debug("Include " + project.getArtifactId());
           return true;
         }
       } catch (PatternSyntaxException e) {
@@ -225,7 +206,6 @@ public class DependenciesResolver extends AbstractLogEnabled {
    * @return {@code true} if the project is excludable, {@code false} otherwise
    */
   protected boolean matchesExcluded(Artifact project, Pattern excludedGroupPattern, Pattern excludedArtifactPattern) {
-
     Logger log = getLogger();
     if (excludedGroupPattern == null && excludedArtifactPattern == null) {
       return false;
@@ -237,9 +217,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
       try {
         Matcher matchGroupId = excludedGroupPattern.matcher(project.getGroupId());
         if (matchGroupId.find()) {
-          if (log.isDebugEnabled()) {
-            log.debug("Exclude " + project.getGroupId());
-          }
+          log.debug("Exclude " + project.getGroupId());
           return true;
         }
       } catch (PatternSyntaxException e) {
@@ -253,9 +231,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
       try {
         Matcher matchGroupId = excludedArtifactPattern.matcher(project.getArtifactId());
         if (matchGroupId.find()) {
-          if (log.isDebugEnabled()) {
-            log.debug("Exclude " + project.getArtifactId());
-          }
+          log.debug("Exclude " + project.getArtifactId());
           return true;
         }
       } catch (PatternSyntaxException e) {
@@ -265,7 +241,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
     return false;
   }
 
-  boolean isNotEmptyCollection(Collection coll) {
+  boolean isNotEmptyCollection(Collection<?> coll) {
     return coll != null && !coll.isEmpty();
   }
 
@@ -278,9 +254,4 @@ public class DependenciesResolver extends AbstractLogEnabled {
     sb.append(artifact.getVersion());
     return sb.toString();
   }
-
-  boolean isEmpty(String str) {
-    return str == null || str.length() == 0;
-  }
-
 }
