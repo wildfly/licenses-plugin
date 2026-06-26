@@ -28,7 +28,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <license.verbose>true</license.verbose>
     <license.sortByGroupIdAndArtifactId>true</license.sortByGroupIdAndArtifactId>
     <licensesOutputFile>${project.build.directory}/licenses.xml</licensesOutputFile>
   </properties>

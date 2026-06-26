@@ -10,6 +10,7 @@
       <licenses>
         <license>
           <name>Apache License 2.0</name>
+          <comments></comments>
         </license>
       </licenses>
     </dependency>

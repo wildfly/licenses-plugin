@@ -10,27 +10,24 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Proxy;
-import org.codehaus.plexus.util.Base64;
+import org.eclipse.aether.RepositorySystemSession;
 import org.wildfly.maven.plugins.licenses.model.KnownLicenseInfo;
 import org.wildfly.maven.plugins.licenses.model.ProjectInfo;
 import org.wildfly.maven.plugins.licenses.model.ProjectLicenseInfo;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -38,8 +35,7 @@ import java.util.stream.Collectors;
  */
 @Mojo(name = "insert-versions", requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true)
-public class UpdateLicensesMojo
-        extends AbstractMojo {
+public class UpdateLicensesMojo extends AbstractMojo {
   private final LicensesFileWriter licensesFileWriter;
   private final LicensesFileReader licensesFileReader;
 
@@ -169,28 +165,21 @@ public class UpdateLicensesMojo
    */
   @Parameter(defaultValue = "false", property = "license.generateVersionProperty")
   private boolean generateVersionProperty;
+
   /**
    * The Maven Project Object
    */
   @Parameter(defaultValue = "${project}", readonly = true)
   private MavenProject project;
 
+  @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+  private RepositorySystemSession repositorySession;
+
   /**
    * Dependencies tool.
    */
-  @javax.inject.Inject
+  @Inject
   private DependenciesResolver dependenciesResolver;
-
-  /**
-   * Keeps a collection of the URLs of the licenses that have been downlaoded. This helps the plugin to avoid
-   * downloading the same license multiple times.
-   */
-  private Set<String> downloadedLicenseURLs = new HashSet<String>();
-
-  /**
-   * Proxy Login/Password encoded(only if usgin a proxy with authentication).
-   */
-  private String proxyLoginPasswordEncoded;
 
   private java.util.Properties systemProperties;
 
@@ -226,23 +215,18 @@ public class UpdateLicensesMojo
 
       initDirectories();
 
-      Map<String, ProjectLicenseInfo> configuredDepLicensesMap = new HashMap<String, ProjectLicenseInfo>();
+      Map<String, ProjectLicenseInfo> configuredDepLicensesMap = new HashMap<>();
       Map<String, License> licenseAliasesMap = new HashMap<>();
-
-      // License info from previous build
-      if (licensesOutputFile.exists()) {
-        loadLicenseInfo(configuredDepLicensesMap, licenseAliasesMap, licensesOutputFile, true);
-      }
 
       // Manually configured license info, loaded second to override previously loaded info
       if (licensesConfigFile.exists()) {
-        loadLicenseInfo(configuredDepLicensesMap, licenseAliasesMap, licensesConfigFile, false);
+        loadLicenseInfo(configuredDepLicensesMap, licenseAliasesMap, licensesConfigFile);
       }
 
       if (licensesConfigFiles != null) {
         for (File licCfgFile : licensesConfigFiles) {
           if (licCfgFile.exists()) {
-            loadLicenseInfo(configuredDepLicensesMap, licenseAliasesMap, licCfgFile, false);
+            loadLicenseInfo(configuredDepLicensesMap, licenseAliasesMap, licCfgFile);
           }
         }
       }
@@ -250,7 +234,7 @@ public class UpdateLicensesMojo
       Collection<ProjectLicenseInfo> dependenciesLicenseInfos = getDependenciesLicenseInfos();
 
       // The resulting list of licenses after dependency resolution
-      List<ProjectLicenseInfo> depProjectLicenses = new ArrayList<ProjectLicenseInfo>();
+      List<ProjectLicenseInfo> depProjectLicenses = new ArrayList<>();
 
       for (ProjectLicenseInfo dependencyLicenseInfo : dependenciesLicenseInfos) {
         getLog().debug("Checking licenses for project " + dependencyLicenseInfo.toString());
@@ -316,9 +300,7 @@ public class UpdateLicensesMojo
   }
 
   private Collection<ProjectLicenseInfo> getDependenciesLicenseInfos() {
-
     MavenProjectDependenciesConfiguration configuration = new MavenProjectDependenciesConfiguration(
-
             includeTransitiveDependencies,
             includeOptionalDependencies,
             includeSelfArtifact,
@@ -326,49 +308,23 @@ public class UpdateLicensesMojo
             includedArtifacts,
             includedGroups,
             excludedGroups,
-            excludedArtifacts, isVerbose()
+            excludedArtifacts
     );
-    SortedMap<String, ProjectLicenseInfo> set = dependenciesResolver.loadDependenciesAndConvertThem(project, configuration, localRepository, remoteRepositories, null, new Function<MavenProject, ProjectLicenseInfo>() {
-      public ProjectLicenseInfo apply(MavenProject project) {
-        return createDependencyProject(project);
-      }
-    });
+    SortedMap<String, ProjectLicenseInfo> set = dependenciesResolver.loadDependenciesAndConvertThem(project, configuration,
+            localRepository, remoteRepositories, null, repositorySession, this::createDependencyProject);
     return set.values();
   }
 
   private List<ProjectLicenseInfo> sortByGroupIdAndArtifactId(List<ProjectLicenseInfo> depProjectLicenses) {
-    List<ProjectLicenseInfo> sorted = new ArrayList<ProjectLicenseInfo>(depProjectLicenses);
-    Comparator<? super ProjectLicenseInfo> comparator = new Comparator<ProjectLicenseInfo>() {
-      public int compare(ProjectLicenseInfo info1, ProjectLicenseInfo info2) {
-        //ProjectLicenseInfo::getId() can not be used because . is before : thus a:b.c would be after a.b:c
-        return (info1.getGroupId() + "+" + info1.getArtifactId()).compareTo(info2.getGroupId() + "+" + info2.getArtifactId());
-      }
-    };
-    Collections.sort(sorted, comparator);
+    List<ProjectLicenseInfo> sorted = new ArrayList<>(depProjectLicenses);
+    //ProjectLicenseInfo::getId() can not be used because . is before : thus a:b.c would be after a.b:c
+    Comparator<? super ProjectLicenseInfo> comparator = (info1, info2)
+            -> (info1.getGroupId() + "+" + info1.getArtifactId()).compareTo(info2.getGroupId() + "+" + info2.getArtifactId());
+    sorted.sort(comparator);
     return sorted;
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  public boolean isIncludeTransitiveDependencies() {
-    return includeTransitiveDependencies;
-  }
-
-  public boolean isIncludeOptionalDependencies() {
-    return includeOptionalDependencies;
-  }
-
-  public boolean isIncludeSelfArtifact() {
-    return includeSelfArtifact;
-  }
-
-  private boolean isVerbose() {
-    return getLog().isDebugEnabled();
-  }
-
-  private void initProxy()
-          throws MojoExecutionException {
+  private void initProxy() {
     Proxy proxyToUse = null;
     for (Proxy proxy : proxies) {
       if (proxy.isActive() && "http".equals(proxy.getProtocol())) {
@@ -379,16 +335,11 @@ public class UpdateLicensesMojo
       }
     }
     if (proxyToUse != null) {
-
       System.getProperties().put("proxySet", "true");
       System.setProperty("proxyHost", proxyToUse.getHost());
       System.setProperty("proxyPort", String.valueOf(proxyToUse.getPort()));
       if (proxyToUse.getNonProxyHosts() != null) {
         System.setProperty("nonProxyHosts", proxyToUse.getNonProxyHosts());
-      }
-      if (proxyToUse.getUsername() != null) {
-        String loginPassword = proxyToUse.getUsername() + ":" + proxyToUse.getPassword();
-        proxyLoginPasswordEncoded = new String(Base64.encodeBase64(loginPassword.getBytes()));
       }
     }
   }
@@ -429,22 +380,15 @@ public class UpdateLicensesMojo
    * @param configuredDepLicensesMap A map between the dependencyId and the license info
    * @param licenseAliasesMap        A map between the license names and licenses
    * @param licenseConfigFile        The license configuration file to load
-   * @param previouslyDownloaded     Whether these licenses were already downloaded
    * @throws MojoExecutionException if could not load license infos
    */
   private void loadLicenseInfo(Map<String, ProjectLicenseInfo> configuredDepLicensesMap, Map<String, License> licenseAliasesMap,
-                               File licenseConfigFile, boolean previouslyDownloaded)
+                               File licenseConfigFile)
           throws MojoExecutionException {
     try (FileInputStream fis = new FileInputStream(licenseConfigFile)) {
       ProjectInfo projectInfo = licensesFileReader.parseLicenseSummary(fis);
       for (ProjectLicenseInfo dep : projectInfo.getDependenciesList()) {
         configuredDepLicensesMap.put(dep.getId(), dep);
-        if (previouslyDownloaded) {
-          for (License license : dep.getLicenses()) {
-            // Save the URL so we don't download it again
-            downloadedLicenseURLs.add(license.getUrl());
-          }
-        }
       }
       for (KnownLicenseInfo knownLicenseInfo : projectInfo.getKnownLicensesList()) {
         licenseAliasesMap.put(knownLicenseInfo.getLicense().getName().toLowerCase(Locale.ROOT), knownLicenseInfo.getLicense());
@@ -467,10 +411,8 @@ public class UpdateLicensesMojo
     ProjectLicenseInfo dependencyProject =
             new ProjectLicenseInfo(depMavenProject.getGroupId(), depMavenProject.getArtifactId(),
                     depMavenProject.getVersion());
-    List<?> licenses = depMavenProject.getLicenses();
-    for (Object license : licenses) {
-      dependencyProject.addLicense((License) license);
-    }
+    List<License> licenses = depMavenProject.getLicenses();
+    dependencyProject.addLicenses(licenses);
     return dependencyProject;
   }
 
@@ -478,6 +420,4 @@ public class UpdateLicensesMojo
     String[] split = params == null ? new String[0] : params.split(",");
     return Arrays.asList(split);
   }
-
-
 }

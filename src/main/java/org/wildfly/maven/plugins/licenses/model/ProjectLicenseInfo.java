@@ -19,17 +19,7 @@ public class ProjectLicenseInfo {
 
   private String version;
 
-  private List<License> licenses = new ArrayList<License>();
-
-  private String licenseResolutionResult;
-
-  public String getLicenseResolutionResult() {
-    return licenseResolutionResult;
-  }
-
-  public void setLicenseResolutionResult(String licenseResolutionResult) {
-    this.licenseResolutionResult = licenseResolutionResult;
-  }
+  private List<License> licenses = new ArrayList<>();
 
   /**
    * Default constructor.
@@ -72,8 +62,10 @@ public class ProjectLicenseInfo {
     return licenses;
   }
 
-  public void setLicenses(List<License> licenses) {
-    this.licenses = licenses;
+  public void addLicenses(List<License> licenses) {
+    if (licenses != null) {
+      this.licenses.addAll(licenses);
+    }
   }
 
   public void addLicense(License license) {
@@ -124,5 +116,4 @@ public class ProjectLicenseInfo {
   public int hashCode() {
     return getId().hashCode();
   }
-
 }
