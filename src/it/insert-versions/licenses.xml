@@ -10,7 +10,7 @@
       <licenses>
         <license>
           <name>Apache License 2.0</name>
-          <comments></comments>
+          <comments>This should not appear on other dependencies</comments>
         </license>
       </licenses>
     </dependency>

@@ -271,6 +271,7 @@ public class UpdateLicensesMojo extends AbstractMojo {
             License canonicalLicense = knownLicenses.containsKey(licenseName) ? knownLicenses.get(licenseName)
                     : licenseAliasesMap.get(licenseName);
             if (canonicalLicense != null) {
+              canonicalLicense = canonicalLicense.clone();
               canonicalLicense.setDistribution(license.getDistribution());
               canonicalLicense.setComments(license.getComments());
               declaredLicenses.set(i, canonicalLicense);
