@@ -60,6 +60,15 @@ public class LicensesFileWriter {
       }
     }
     depNode.appendChild(licensesNode);
+
+    if (!dep.getShadedDependencies().isEmpty()) {
+      Node shadedNode = doc.createElement("shaded-dependencies");
+      for (ProjectLicenseInfo shadedDep : dep.getShadedDependencies()) {
+        shadedNode.appendChild(createDependencyNode(doc, shadedDep));
+      }
+      depNode.appendChild(shadedNode);
+    }
+
     return depNode;
   }
 

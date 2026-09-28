@@ -21,6 +21,8 @@ public class ProjectLicenseInfo {
 
   private List<License> licenses = new ArrayList<>();
 
+  private List<ProjectLicenseInfo> shadedDependencies = new ArrayList<>();
+
   /**
    * Default constructor.
    */
@@ -70,6 +72,14 @@ public class ProjectLicenseInfo {
 
   public void addLicense(License license) {
     licenses.add(license);
+  }
+
+  public List<ProjectLicenseInfo> getShadedDependencies() {
+    return shadedDependencies;
+  }
+
+  public void addShadedDependency(ProjectLicenseInfo dep) {
+    shadedDependencies.add(dep);
   }
 
   /**
