@@ -1,5 +1,8 @@
 package org.wildfly.maven.plugins.licenses;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.model.License;
 import org.apache.maven.plugin.AbstractMojo;
@@ -11,24 +14,30 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Proxy;
 import org.eclipse.aether.RepositorySystemSession;
+import org.wildfly.maven.plugins.licenses.ShadedArtifactsFileReader.ShadedDependency;
 import org.wildfly.maven.plugins.licenses.model.KnownLicenseInfo;
 import org.wildfly.maven.plugins.licenses.model.ProjectInfo;
 import org.wildfly.maven.plugins.licenses.model.ProjectLicenseInfo;
 
 import javax.inject.Inject;
+import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
+import org.wildfly.maven.plugins.licenses.ShadedArtifactsFileReader.FatJar;
 
 /**
  * Insert versions into generated licenses.xml
@@ -36,6 +45,7 @@ import java.util.stream.Collectors;
 @Mojo(name = "insert-versions", requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true)
 public class UpdateLicensesMojo extends AbstractMojo {
+  private static final String JAR = "jar";
   private final LicensesFileWriter licensesFileWriter;
   private final LicensesFileReader licensesFileReader;
 
@@ -162,6 +172,7 @@ public class UpdateLicensesMojo extends AbstractMojo {
   /**
    * Instead of adding the artifact version, add the property ${version.groupId.artifactId}.
    * This property is expected to be replaced during Galleon provisioning.
+   * Has no impact for shaded dependencies that keep their version.
    */
   @Parameter(defaultValue = "false", property = "license.generateVersionProperty")
   private boolean generateVersionProperty;
@@ -174,6 +185,14 @@ public class UpdateLicensesMojo extends AbstractMojo {
 
   @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
   private RepositorySystemSession repositorySession;
+
+  /**
+   * Path to the shaded-artifacts XML file.
+   * When provided, all bundled dependencies found in shading artifacts are added to the license
+   * generation, nested under the dependency that shades them.
+   */
+  @Parameter(property = "license.shadedArtifactsFile")
+  private File shadedArtifactsFile;
 
   /**
    * Dependencies tool.
@@ -231,7 +250,21 @@ public class UpdateLicensesMojo extends AbstractMojo {
         }
       }
 
-      Collection<ProjectLicenseInfo> dependenciesLicenseInfos = getDependenciesLicenseInfos();
+      Map<String, Set<String>> shadingMap = Collections.emptyMap();
+      List<Artifact> shadedArtifacts = new ArrayList<>();
+      if (shadedArtifactsFile != null && shadedArtifactsFile.exists()) {
+        shadingMap = addShadedDependencies(shadedArtifacts);
+      }
+
+      // Flat set of all shaded dep keys — these must keep their actual version, not a property.
+      Set<String> shadedDepKeys = Collections.emptySet();
+      if (generateVersionProperty) {
+        shadedDepKeys = new HashSet<>();
+        for (Set<String> keys : shadingMap.values()) {
+          shadedDepKeys.addAll(keys);
+        }
+      }
+      Collection<ProjectLicenseInfo> dependenciesLicenseInfos = getDependenciesLicenseInfos(shadedArtifacts);
 
       // The resulting list of licenses after dependency resolution
       List<ProjectLicenseInfo> depProjectLicenses = new ArrayList<>();
@@ -257,7 +290,7 @@ public class UpdateLicensesMojo extends AbstractMojo {
         } else {
           licenseInfo = dependencyLicenseInfo;
         }
-        if (generateVersionProperty) {
+        if (generateVersionProperty && !shadedDepKeys.contains(artifactKey(dependencyLicenseInfo.getGroupId(), dependencyLicenseInfo.getArtifactId()))) {
             licenseInfo.setVersion("${version."+dependencyLicenseInfo.getGroupId()+"."+dependencyLicenseInfo.getArtifactId()+"}");
         }
 
@@ -286,6 +319,10 @@ public class UpdateLicensesMojo extends AbstractMojo {
         depProjectLicenses.add(licenseInfo);
       }
 
+      if (!shadingMap.isEmpty()) {
+        depProjectLicenses = nestShadedDependencies(depProjectLicenses, shadingMap);
+      }
+
       try {
         getLog().info("Sort licenses " + sortByGroupIdAndArtifactId);
         if (sortByGroupIdAndArtifactId) {
@@ -300,7 +337,92 @@ public class UpdateLicensesMojo extends AbstractMojo {
     }
   }
 
-  private Collection<ProjectLicenseInfo> getDependenciesLicenseInfos() {
+  /**
+   * Reads the shaded-artifacts XML file, injects any bundled dependency not already present in
+   * {@code project.getArtifacts()} so that {@link DependenciesResolver} resolves their licenses.
+   * @return The dependency that shads dependencies to the shaded dependencies map. Used to nest
+   * shaded dependencies in the generated XML file.
+   */
+  private Map<String, Set<String>> addShadedDependencies(List<Artifact> artifacts) throws MojoExecutionException {
+    List<FatJar> fatJars;
+    try {
+      fatJars = ShadedArtifactsFileReader.read(shadedArtifactsFile.toPath());
+    } catch (IOException | XMLStreamException e) {
+      throw new MojoExecutionException("Unable to parse shaded artifacts file: " + shadedArtifactsFile, e);
+    }
+
+    // Index existing artifacts by groupId:artifactId to avoid duplicates
+    Map<String, Artifact> existingById = new HashMap<>();
+    for (Artifact a : project.getArtifacts()) {
+      existingById.put(artifactKey(a.getGroupId(), a.getArtifactId()), a);
+    }
+    Map<String, Set<String>> shadingMap = new HashMap<>();
+    for (FatJar fatJar : fatJars) {
+      String shadingKey = artifactKey(fatJar.getGroupId(), fatJar.getArtifactId());
+      Set<String> depKeys = shadingMap.get(shadingKey);
+      // All shaded artifacts are aggregated under the same GroupId/ArtifactId even if we have a classifier.
+      // Classifier is not relevant for generated License information.
+      if (depKeys == null) {
+        depKeys = new HashSet<>();
+        shadingMap.put(shadingKey, depKeys);
+      }
+      for (ShadedDependency dep : fatJar.getDependencies()) {
+        String key = artifactKey(dep.getGroupId(), dep.getArtifactId());
+        depKeys.add(key);
+        if (existingById.containsKey(key)) {
+          getLog().debug("Shaded dependency " + key + " already in project artifacts, skipping");
+          continue;
+        }
+        getLog().debug("Adding shaded dependency to license resolution: " + key);
+        Artifact artifact = new DefaultArtifact(dep.getGroupId(), dep.getArtifactId(),
+                dep.getVersion(), Artifact.SCOPE_COMPILE, JAR, dep.getClassifier(), new DefaultArtifactHandler(JAR));
+        artifacts.add(artifact);
+        existingById.put(key, artifact);
+      }
+    }
+    return shadingMap;
+  }
+
+  /**
+   * Moves resolved shaded dependency entries from the flat list into their shading artifact as
+   * nested {@link ProjectLicenseInfo#getShadedDependencies()}.
+   */
+  private List<ProjectLicenseInfo> nestShadedDependencies(List<ProjectLicenseInfo> flat,
+          Map<String, Set<String>> shadingMap) {
+    // Build a lookup of all resolved entries by their groupId:artifactId key
+    Map<String, ProjectLicenseInfo> byKey = new HashMap<>();
+    for (ProjectLicenseInfo info : flat) {
+      byKey.put(artifactKey(info.getGroupId(), info.getArtifactId()), info);
+    }
+
+    // Collect all dep keys that are nested under a shading artifact (to remove from flat list)
+    Map<String, ProjectLicenseInfo> toNest = new HashMap<>();
+    for (Map.Entry<String, Set<String>> entry : shadingMap.entrySet()) {
+      ProjectLicenseInfo shading = byKey.get(entry.getKey());
+      if (shading == null) {
+        continue;
+      }
+      for (String depKey : entry.getValue()) {
+        ProjectLicenseInfo dep = byKey.get(depKey);
+        if (dep != null) {
+          shading.addShadedDependency(dep);
+          toNest.put(depKey, dep);
+        }
+      }
+    }
+
+    // Return flat list minus the entries that have been nested
+    List<ProjectLicenseInfo> result = new ArrayList<>();
+    for (ProjectLicenseInfo info : flat) {
+      String key = artifactKey(info.getGroupId(), info.getArtifactId());
+      if (!toNest.containsKey(key)) {
+        result.add(info);
+      }
+    }
+    return result;
+  }
+
+  private Collection<ProjectLicenseInfo> getDependenciesLicenseInfos(List<Artifact> shadedArtifacts) {
     MavenProjectDependenciesConfiguration configuration = new MavenProjectDependenciesConfiguration(
             includeTransitiveDependencies,
             includeOptionalDependencies,
@@ -312,7 +434,7 @@ public class UpdateLicensesMojo extends AbstractMojo {
             excludedArtifacts
     );
     SortedMap<String, ProjectLicenseInfo> set = dependenciesResolver.loadDependenciesAndConvertThem(project, configuration,
-            localRepository, remoteRepositories, null, repositorySession, this::createDependencyProject);
+            localRepository, remoteRepositories, null, repositorySession, this::createDependencyProject, shadedArtifacts);
     return set.values();
   }
 
@@ -420,5 +542,9 @@ public class UpdateLicensesMojo extends AbstractMojo {
   static List<String> convertStringToList(String params) {
     String[] split = params == null ? new String[0] : params.split(",");
     return Arrays.asList(split);
+  }
+
+  private static String artifactKey(String groupId, String artifactId) {
+    return groupId + ":" + artifactId;
   }
 }
