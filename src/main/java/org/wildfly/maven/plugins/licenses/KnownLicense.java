@@ -44,6 +44,9 @@ public enum KnownLicense {
     CC_2_5("Creative Commons Attribution 2.5", "https://creativecommons.org/licenses/by/2.5/legalcode",
             "creative commons attribution license 2.5"),
 
+    CDDL_1_1("COMMON DEVELOPMENT AND DISTRIBUTION LICENSE", "https://spdx.org/licenses/CDDL-1.1.html",
+            "cddl 1.1"),
+
     EDL_1_0("Eclipse Distribution License, Version 1.0", "https://repository.jboss.org/licenses/edl-1.0.txt",
             "eclipse distribution license - v 1.0",
             "eclipse distribution license v. 1.0",
