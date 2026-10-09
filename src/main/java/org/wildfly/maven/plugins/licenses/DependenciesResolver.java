@@ -16,6 +16,7 @@ import org.eclipse.aether.RepositorySystemSession;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -46,27 +47,28 @@ public class DependenciesResolver extends AbstractLogEnabled {
                                                                  List<ArtifactRepository> remoteRepositories,
                                                                  SortedMap<String, MavenProject> cache,
                                                                  RepositorySystemSession repositorySession,
-                                                                 Function<MavenProject, R> convertFunction) {
+                                                                 Function<MavenProject, R> convertFunction,
+                                                                 List<Artifact> shadedArtifacts) {
     Pattern includedGroupPattern = (Strings.isNullOrEmpty(configuration.includedGroups) ? null : Pattern.compile(configuration.includedGroups));
     Pattern includedArtifactPattern = (Strings.isNullOrEmpty(configuration.includedArtifacts) ? null : Pattern.compile(configuration.includedArtifacts));
 
     Pattern excludedGroupPattern = (Strings.isNullOrEmpty(configuration.excludedGroups) ? null : Pattern.compile(configuration.excludedGroups));
     Pattern excludedArtifactPattern = (Strings.isNullOrEmpty(configuration.excludedArtifacts) ? null : Pattern.compile(configuration.excludedArtifacts));
 
-    Set<Artifact> depArtifacts;
+    Set<Artifact> depArtifacts = new HashSet<>();
 
     if (configuration.includeTransitiveDependencies) {
       // All project dependencies
-      depArtifacts = project.getArtifacts();
+      depArtifacts.addAll(project.getArtifacts());
     } else {
       // Only direct project dependencies
-      depArtifacts = project.getDependencyArtifacts();
+      depArtifacts.addAll(project.getDependencyArtifacts());
     }
 
     if (configuration.includeSelfArtifact) {
       depArtifacts.add(project.getArtifact());
     }
-
+    depArtifacts.addAll(shadedArtifacts);
     List<String> includedScopes = configuration.includedScopes;
     List<String> excludeScopes = configuration.excludedScopes;
 
