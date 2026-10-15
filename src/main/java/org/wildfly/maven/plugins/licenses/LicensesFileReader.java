@@ -12,7 +12,6 @@ import org.wildfly.maven.plugins.licenses.model.ProjectLicenseInfo;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +35,7 @@ public class LicensesFileReader {
     List<ProjectLicenseInfo> dependencies = new ArrayList<>();
     List<KnownLicenseInfo> knownLicenses = new ArrayList<>();
 
-    DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+    DocumentBuilder docBuilder = XmlUtils.createDocumentBuilder();
     Document doc = docBuilder.parse(licSummaryIS);
 
     // normalize text representation

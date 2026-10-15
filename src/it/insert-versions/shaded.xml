@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shaded-artifacts>
+  <artifact>
+    <groupId>com.fasterxml.woodstox</groupId>
+    <artifactId>woodstox-core</artifactId>
+    <version>7.0.0</version>
+    <type>jar</type>
+    <shaded-dependencies>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>xsdlib</artifactId>
+        <version>2022.7</version>
+        <type>jar</type>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.xml.bind.jaxb</groupId>
+        <artifactId>isorelax</artifactId>
+        <version>20090621</version>
+        <type>jar</type>
+      </dependency>
+    </shaded-dependencies>
+  </artifact>
+</shaded-artifacts>
+
