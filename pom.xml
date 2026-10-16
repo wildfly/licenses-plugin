@@ -45,7 +45,7 @@
         <connection>scm:git:git@github.com:wildfly/licenses-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly/licenses-plugin.git</developerConnection>
         <url>https://github.com/wildfly/licenses-plugin</url>
-        <tag>2.4.5.Final</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <licenses>
