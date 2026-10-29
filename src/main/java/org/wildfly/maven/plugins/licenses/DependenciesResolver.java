@@ -18,6 +18,8 @@ import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -139,6 +141,7 @@ public class DependenciesResolver extends AbstractLogEnabled {
       projectBuildingRequest.setLocalRepository(localRepository);
       projectBuildingRequest.setRemoteRepositories(remoteRepositories);
       projectBuildingRequest.setSystemProperties(System.getProperties());
+      projectBuildingRequest.setUserProperties(toProperties(repositorySession.getUserProperties()));
       projectBuildingRequest.setRepositorySession(repositorySession);
       projectBuildingRequest.setProcessPlugins(false);
       projectBuildingRequest.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
@@ -156,7 +159,11 @@ public class DependenciesResolver extends AbstractLogEnabled {
     }
     return depMavenProject;
   }
-
+  private static Properties toProperties(Map<String, String> props) {
+      Properties p = new Properties();
+      p.putAll(props);
+      return p;
+  }
   /**
    * Tests if the given project can be included against a groupdId pattern and a artifact pattern.
    *
